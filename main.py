@@ -10,7 +10,7 @@ def clear_terminal():
     run("cls", shell=True)
 
 
-def detect_install_dir():
+def detect_install_dir() -> Path:
     # check default directory
     COMMON_LIBRARY = "Program Files (x86)\\Steam\\steamapps\\common\\FPSAimTrainer"
     STEAM_LIBRARY = "SteamLibrary\\steamapps\\common\\FPSAimTrainer"
@@ -46,7 +46,7 @@ def detect_install_dir():
     return install_dir
 
 
-def backup_folders(install_dir: Path):
+def backup_folders(install_dir: Path, config: ConfigParser):
     """renames pre-existing theme, crosshair, and sound folders"""
     crosshairs_path = install_dir / "FPSAimTrainer\\crosshairs"
     sounds_path = install_dir / "FPSAimTrainer\\sounds"
@@ -64,7 +64,7 @@ def backup_folders(install_dir: Path):
 
 
 # TODO: error handling
-def import_files(install_dir: Path):
+def import_files(install_dir: Path, config: ConfigParser):
     "add crosshairs, sounds, and themes to folders"
     crosshairs_path = install_dir / "FPSAimTrainer\\crosshairs"
     sounds_path = install_dir / "FPSAimTrainer\\sounds"
@@ -87,23 +87,14 @@ def import_files(install_dir: Path):
         shutil.copy(src, dst)
 
 
-def read_config(config_file: str):
+def read_config(config_file: Path) -> ConfigParser:
     config = ConfigParser()
     config.read(config_file)
     return config
 
 
 # TODO: apply_primary_user_settings() incomplete
-def apply_primary_user_settings(install_dir: Path, config: ConfigParser):
-    primary_user_settings_path = (
-        install_dir
-        / "FPSAimTrainer"
-        / "Saved"
-        / "SaveGames"
-        / "PrimaryUserSettings.json"
-    )
-    if not primary_user_settings_path.exists():
-        quit("run kovaaks prior to running this script")
+def apply_primary_user_settings(primary_user_settings_path: Path, config: ConfigParser):
     with open(primary_user_settings_path, "r") as f:
         primary_user_settings = json.load(f)
 
@@ -173,24 +164,10 @@ def create_weapon_settings(path: Path, config: ConfigParser):
         for key, value in settings.items():
             f.write(f"{key}={value}\n")
 
-    pass
 
-
-def apply_weapon_settings(install_dir: Path, config: ConfigParser):
-    # TODO: move this outside of the func
-    weapon_settings_path = (
-        install_dir / "FPSAimTrainer" / "Saved" / "SaveGames" / "weaponsettings.ini"
-    )
+def apply_weapon_settings(weapon_settings_path: Path, config: ConfigParser):
     weapon_settings = ConfigParser(allow_unnamed_section=True)
-
-    if not weapon_settings_path.exists():
-        create_weapon_settings(weapon_settings_path, config)
-        return
-
     weapon_settings.read(weapon_settings_path)
-
-
-
 
     # TODO: use config
     weapon_settings.set(UNNAMED_SECTION, "WeaponHidden", "true")
@@ -213,16 +190,27 @@ def apply_weapon_settings(install_dir: Path, config: ConfigParser):
 
 
 def main():
-    config = read_config("config.ini")
     install_dir = detect_install_dir()
+    save_games_dir = install_dir / "FPSAimTrainer" / "Saved" / "SaveGames"
+    primary_user_settings_path = save_games_dir / "PrimaryUserSettings.json"
+    weapon_settings_path = save_games_dir / "weaponsettings.ini"
 
-    backup_folders(install_dir)
-    import_files(install_dir)
-    apply_primary_user_settings(install_dir, config)
-    apply_weapon_settings(install_dir, config)
+    if not primary_user_settings_path.exists():
+        quit("run kovaaks prior to running this script")
 
-    # TODO: find where resolution is stored
-    # TODO: make restore backups script
+    config = read_config(Path("config.ini"))
+
+    backup_folders(install_dir, config)
+    import_files(install_dir, config)
+
+    apply_primary_user_settings(primary_user_settings_path, config)
+
+    if weapon_settings_path.exists():
+        apply_weapon_settings(weapon_settings_path, config)
+    else:
+        create_weapon_settings(weapon_settings_path, config)
+
+    # TODO: figure out where resolution is stored
 
 
 if __name__ == "__main__":
