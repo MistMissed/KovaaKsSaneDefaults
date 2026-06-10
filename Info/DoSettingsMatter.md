@@ -1,3 +1,4 @@
+
 # Why Do Visuals Matter?
 ## Theme
 A good theme makes it easier to see where and how targets are moving, this will help you score higher and improve faster.
@@ -12,3 +13,5 @@ Good themes have high contrast, low visual clutter, and do NOT have solid color 
 ## Palette
 
 ## HUD
+
+# Why Do Sounds Matter?
